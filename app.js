@@ -24,8 +24,11 @@ const test = async () => {
 }
 test();
 
+app.use('/', router);
+
 
 // we set the port: to environmental variable when deployed; to 8080 when we're local
+sequelize.sync();
 const port = process.env.PORT ? process.env.PORT : 8080;
 
 // 🚀🚀🚀
