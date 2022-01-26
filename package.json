@@ -10,6 +10,7 @@
   "author": "Rivka Bar-Chaim, Kristy Delacruz, Lucy Lee, Marcin Tomala",
   "license": "ISC",
   "devDependencies": {
+    "dotenv": "^14.3.2",
     "nodemon": "^2.0.15"
   },
   "dependencies": {

@@ -1,20 +1,12 @@
 // we'll use bcrypt to salt and hash the passwords before storing them in the db
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const db = require('../models');
+const isAuth = require('./isAuth');
 const { Op } = db.Sequelize;
 const { User } = db;
+require('dotenv').config();
 
-
-// helper function to hash password with 
-function hashPassword(password) {
-    const hashed = bcrypt.hash(password, 12);
-    return hashed;
-}
-
-// helper function to compare hashed passwords
-function isValidPassword(password, hashed) {
-    return bcrypt.compare(password, hashed);
-}
 
 /* signup controller:
 1. grabs prospective user's email, username, and password from the request body
@@ -24,20 +16,21 @@ function isValidPassword(password, hashed) {
 If email or username already exists, we check which one it is and return an appropriate error message.
 */
 
-exports.signUp = async(req, res, next) => {
+const signUp = async(req, res, next) => {
     try {
         const { email, username, password } = req.body;
-        const alreadyPresent = await User.findAll({where: {[Op.or]: [{email: email}, {name: username}]}});
-        if (!alreadyPresent.length) {
-            const hashed = await hashPassword(password);
+        const alreadyPresent = await User.findOne({where: {[Op.or]: [{email: email}, {name: username}]}});
+        console.log(alreadyPresent)
+        if (!alreadyPresent) {
+            const hashedPw = await bcrypt.hash(password, 12);
             const user = await User.create({
                 email : email,
                 name : username,
-                password : hashed
+                password : hashedPw
             });
-            res.status(201).json({message: `User ${username} created successfully.`, userId: user.id});
+            res.status(201).json({message: `User '${username}' created successfully.`, userId: user.id});
         } else {
-            if (alreadyPresent[0].dataValues.email === email) {
+            if (alreadyPresent.dataValues.email === email) {
                 res.status(422).json({error : "Email already in use."});
             } else {
                 res.status(422).json({error : "Username already in use."});
@@ -51,24 +44,28 @@ exports.signUp = async(req, res, next) => {
 /* Log In controller. Get the username & password from request body. 
 Compare against the database. If username has no match - return appropriate error. If hashed password matches - log in, 
 generate token, return token in response. If the password is invalid, return appropriate error.*/
-exports.logIn = async(req, res, next) => {
+
+const logIn = async(req, res, next) => {
     try {
         console.log(req.body);
         const { username, password } = req.body;
-        const user = await User.findAll({where: {name: username}});
+        const user = await User.findOne({where: {name: username}});
         console.log(user)
-        if(!user.length) {
-            res.status(422).json({error : "User Not Found"});
+        if(!user) {
+            res.status(401).json({error : "User Not Found"});
         } else {
-            const hashedPw = user[0].dataValues.password;
-            if (await isValidPassword(password, hashedPw)) {
-                //const token = generateToken(user);
-                res.status(201).json({message: "User logged in." /*, token: token */});
+            const hashedPw = user.dataValues.password;
+            if (await bcrypt.compare(password, hashedPw)) {
+                // generate a JWT with the default algorithm - HMAC-SHA256
+                const token = jwt.sign({userId: user.dataValues.id}, process.env.SECRET , { expiresIn: '1h' });
+                res.status(201).json({message: "User logged in." , token: token, userId: user.dataValues.id});
             } else {
-                res.status(422).json({error : "Invalid Password"});
+                res.status(401).json({error : "Invalid Password"});
             }
         }
     } catch(err) {
         res.status(404).json({error : "Connection Error/Not Found"});
     }
 }
+
+module.exports = { logIn, signUp, isAuth };
