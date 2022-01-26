@@ -4,19 +4,16 @@ the database, hence the database models import: */
 const db = require('../models');
 const { User, Pet } = db;
 
-// function tokenValidate();
 
 exports.getPetById = async(req, res, next) => {
     try {
-        //tokenValidate();
-        const id = req.params.id;
-        console.log(id);
-        const pet = await Pet.findAll({where: {userId: id}});
+        const userId = req.userId;
+        const pet = await Pet.findAll({where: {userId: userId}});
         console.log(pet);
         if (pet.length !== 0) {
             res.status(200).json({message: "Pet(s) found", pet: pet});
         } else {
-            res.status(404).json({message: `No pet with ${id} found`});
+            res.status(404).json({message: `No pet for user with ${userId} found`});
         }
     } catch(err) {
         res.status(404).json({error : "Connection Error/Not Found"});
@@ -26,7 +23,6 @@ exports.getPetById = async(req, res, next) => {
 exports.addPetToUser = async(req, res, next) => {
     try {
         const { userId, name, image } = req.body;
-        console.log(req.body);
         const user = await User.findByPk(userId);
         console.log(user);
         if (user) {
