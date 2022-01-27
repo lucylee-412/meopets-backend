@@ -3,9 +3,9 @@ const jwt = require('jsonwebtoken');
 // token verifying middleware. Present on every route that needs to be protected.
 
 module.exports = (req, res, next) => {
-    /* We get the token from the request header (if it's there)
-       Then decode it, verifying it in the process. If all went well - proceed, also depositing 
-       the payload (userId) into the request to be used by later requests the might need it
+    /* We get the token from the request header (if it's there).
+       Then we verify it, decoding it in the process. If all went well - proceed, also depositing 
+       the payload (userId) into the request to be used by later requests the might need it.
        Otherwise - throw the appropriate error. */
     const authHeader = req.get('Authorization');
     if (!authHeader) {

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../models');
 const isAuth = require('./isAuth');
 const { Op } = db.Sequelize;
-const { User } = db;
+const { User, Pet } = db;
 require('dotenv').config();
 
 
@@ -18,9 +18,9 @@ If email or username already exists, we check which one it is and return an appr
 
 const signUp = async(req, res, next) => {
     try {
-        const { email, username, password } = req.body;
+        const { email, username, password, firstPetName, firstPetType } = req.body;
+        console.log(req.body);
         const alreadyPresent = await User.findOne({where: {[Op.or]: [{email: email}, {name: username}]}});
-        console.log(alreadyPresent)
         if (!alreadyPresent) {
             const hashedPw = await bcrypt.hash(password, 12);
             const user = await User.create({
@@ -28,7 +28,15 @@ const signUp = async(req, res, next) => {
                 name : username,
                 password : hashedPw
             });
-            res.status(201).json({message: `User '${username}' created successfully.`, userId: user.id});
+            const newUser = user.dataValues;
+            // every user is given a pet on sign up - let's create the first one for the new user now!
+            const firstPet = await Pet.create({
+                name: firstPetName,
+                type: firstPetType,
+                userId: newUser.id
+            })
+            const token = jwt.sign({userId: newUser.id}, process.env.SECRET, { expiresIn: '1h' });
+            res.status(201).json({message: `User '${username}' created successfully.`, user: {username: newUser.name, currency: newUser.money}, firstpet: firstPet, token: token});
         } else {
             if (alreadyPresent.dataValues.email === email) {
                 res.status(422).json({error : "Email already in use."});
@@ -47,18 +55,18 @@ generate token, return token in response. If the password is invalid, return app
 
 const logIn = async(req, res, next) => {
     try {
-        console.log(req.body);
         const { username, password } = req.body;
         const user = await User.findOne({where: {name: username}});
-        console.log(user)
         if(!user) {
             res.status(401).json({error : "User Not Found"});
         } else {
             const hashedPw = user.dataValues.password;
             if (await bcrypt.compare(password, hashedPw)) {
                 // generate a JWT with the default algorithm - HMAC-SHA256
+                const now = new Date();
                 const token = jwt.sign({userId: user.dataValues.id}, process.env.SECRET , { expiresIn: '1h' });
-                res.status(201).json({message: "User logged in." , token: token, userId: user.dataValues.id});
+                res.status(201).json({message: "User logged in." , token: token, iat: now.getTime(), exp: now.getTime()+3600, userId: user.dataValues.id, currency: user.dataValues.money});
+                console.log(`user ${user.dataValues.name} logged in`);
             } else {
                 res.status(401).json({error : "Invalid Password"});
             }

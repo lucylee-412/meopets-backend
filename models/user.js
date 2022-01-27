@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) =>  {
                 notEmpty : true
             }
         },
+        money : {
+            type : DataTypes.INTEGER,
+            defaultValue: 300
+        }
     });
     return User;
 }

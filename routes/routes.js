@@ -18,7 +18,8 @@ router.post('/login', logIn);
 
 // pet routes
 router.get('/pets', isAuth, petController.getPetById);
-router.post('/pets', petController.addPetToUser);
+router.post('/pets', isAuth,  petController.addPetToUser);
+router.put('/pets', isAuth,  petController.updatePet);
 
 
 /* exporting router to import it in the main app for the server to direct the requests
