@@ -1,28 +1,21 @@
-// imports; we need:
-// express for streamlining our server
 const express = require('express');
-// models contains the database models - initialized in ./models/index.js
 const db = require('./models')
-// from models we want the initialized sequelize object to sync our database
 const sequelize = db.sequelize;
-// importing the routes file to direct our requests:
-const router = require('./routes/routes')
-// our server is an express app:
+const router = require('./routes/routes');
 const app = express();
+const cors = require('cors');
 
+app.use(cors());
 // JSON parser to parse the incoming requests:
 app.use(express.json());
 
-// sequelize test
-const test = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Connection has been established successfully.');
-  } catch (error) {
-    console.error('Unable to connect to the database:', error);
-  }
-}
-test();
+// Request headers. Might add a restriction to only accept request from our frontend.
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE, PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type', 'Authorization');
+  next();
+});
 
 app.use('/', router);
 

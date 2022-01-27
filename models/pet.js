@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) =>  {
                 notEmpty : true,
             }
         },
+        type : {
+            type : DataTypes.INTEGER,
+            allowNull : false
+        },
         health : {
             type : DataTypes.INTEGER,
             allowNull : false,
@@ -30,13 +34,9 @@ module.exports = (sequelize, DataTypes) =>  {
             allowNull : false,
             defaultValue: 50
         },
-        image : {
-            type : DataTypes.STRING,
-            allowNull : false,
-            validate : {
-                notEmpty : true,
-                isUrl : true
-            }
+        fishingxp : {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
         }
     });
     return Pet;
