@@ -9,7 +9,6 @@ exports.getPetById = async(req, res, next) => {
     try {
         const userId = req.userId;
         const pet = await Pet.findAll({where: {userId: userId}});
-        console.log(pet);
         if (pet.length !== 0) {
             res.status(200).json({message: "Pet(s) found", pet: pet});
         } else {
@@ -25,7 +24,6 @@ exports.addPetToUser = async(req, res, next) => {
         const userId = req.userId;
         const { name, type } = req.body;
         const user = await User.findByPk(userId);
-        console.log(user);
         if (user) {
             const pet = await Pet.create({userId: userId, name: name, type: type});
             res.status(200).json({message: `Pet ${name} for user ${userId} created!`, pet: pet});
@@ -47,6 +45,29 @@ exports.getUserData = async(req, res, next) => {
     }
 }
 
+exports.updateUser = async(req, res, next) => {
+    try {
+        const userId = req.userId;
+        const { currency } = req.body.data;
+        const updated = await User.update({money: currency}, {
+            where: {id: userId},
+            returning: true
+        });
+        const newData = updated[1][0].dataValues;
+        res.status(201).json({
+            message: `User with id ${userId} updated. Full data:`,
+            user: { 
+                username: newData.name, 
+                currency: newData.money, 
+                created: newData.createdAt, 
+                lastUpdated: newData.updatedAt 
+            }
+        });
+    } catch(err) {
+        res.status(404).json({error : "Connection Error/Not Found"});
+    }
+}
+
 exports.updatePet = async(req, res, next) => {
     try {
         const userId = req.userId;
@@ -54,11 +75,10 @@ exports.updatePet = async(req, res, next) => {
             where: {id: req.body.data.id},
             returning: true
         });
-        res.status(200).json({
+        res.status(201).json({
             message: `Pet with id ${req.body.data.id} updated. Full data:`,
             pet: updated[1][0].dataValues
         });
-        console.log(updated[1][0].dataValues);
     } catch (err) {
         res.status(404).json({ error : err });
     }

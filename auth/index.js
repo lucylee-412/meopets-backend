@@ -19,7 +19,6 @@ If email or username already exists, we check which one it is and return an appr
 const signUp = async(req, res, next) => {
     try {
         const { email, username, password, firstPetName, firstPetType } = req.body;
-        console.log(req.body);
         const alreadyPresent = await User.findOne({where: {[Op.or]: [{email: email}, {name: username}]}});
         if (!alreadyPresent) {
             const hashedPw = await bcrypt.hash(password, 12);
@@ -35,8 +34,21 @@ const signUp = async(req, res, next) => {
                 type: firstPetType,
                 userId: newUser.id
             })
+            const now = new Date();
+            const iat = parseInt(now.getTime()/1000);
             const token = jwt.sign({userId: newUser.id}, process.env.SECRET, { expiresIn: '1h' });
-            res.status(201).json({message: `User '${username}' created successfully.`, user: {username: newUser.name, currency: newUser.money}, firstpet: firstPet, token: token});
+            res.status(201).json({
+                message: `User '${username}' created successfully.`, 
+                user: {
+                    username: newUser.name, 
+                    currency: newUser.money,
+                    created: newUser.createdAt,
+                    lastUpdated: newUser.updatedAt
+                }, firstpet: firstPet, 
+                token: token, 
+                iat: iat, 
+                exp: iat+3600,
+            });
         } else {
             if (alreadyPresent.dataValues.email === email) {
                 res.status(422).json({error : "Email already in use."});
@@ -58,15 +70,28 @@ const logIn = async(req, res, next) => {
         const { username, password } = req.body;
         const user = await User.findOne({where: {name: username}});
         if(!user) {
-            res.status(401).json({error : "User Not Found"});
+            res.status(422).json({error : "User Not Found"});
         } else {
-            const hashedPw = user.dataValues.password;
+            const rUser = user.dataValues;
+            const hashedPw = rUser.password;
             if (await bcrypt.compare(password, hashedPw)) {
                 // generate a JWT with the default algorithm - HMAC-SHA256
                 const now = new Date();
-                const token = jwt.sign({userId: user.dataValues.id}, process.env.SECRET , { expiresIn: '1h' });
-                res.status(201).json({message: "User logged in." , token: token, iat: now.getTime(), exp: now.getTime()+3600, userId: user.dataValues.id, currency: user.dataValues.money});
-                console.log(`user ${user.dataValues.name} logged in`);
+                const iat = parseInt(now.getTime()/1000);
+                await User.update({name: username}, {where : {id: rUser.id}});
+                const token = jwt.sign({userId: rUser.id}, process.env.SECRET, { expiresIn: '1h' });
+                res.status(201).json({
+                    message: "User logged in.", 
+                    token: token, 
+                    iat: iat, 
+                    exp: iat+3600,
+                    user: {
+                        username: rUser.name, 
+                        currency: rUser.money,
+                        created: rUser.createdAt,
+                        lastUpdated: rUser.updatedAt
+                    }
+                });
             } else {
                 res.status(401).json({error : "Invalid Password"});
             }

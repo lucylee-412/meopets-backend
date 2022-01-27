@@ -21,6 +21,8 @@ router.get('/pets', isAuth, petController.getPetById);
 router.post('/pets', isAuth,  petController.addPetToUser);
 router.put('/pets', isAuth,  petController.updatePet);
 
+router.get('/pets', isAuth, petController.getPetById);
+router.put('/users', isAuth, petController.updateUser);
 
 /* exporting router to import it in the main app for the server to direct the requests
  to the router as they come in */
